@@ -35,7 +35,7 @@
   /* ---------------- расшифровка ---------------- */
   const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
   let ENC = null;
-  async function loadEnc() { if (!ENC) ENC = await (await fetch('data.enc.json', { cache: 'no-cache' })).json(); return ENC; }
+  async function loadEnc() { if (!ENC) ENC = await (await fetch('data.enc.json?v=' + Date.now(), { cache: 'no-cache' })).json(); return ENC; }
   async function decrypt(pw) {
     const enc = await loadEnc();
     const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);

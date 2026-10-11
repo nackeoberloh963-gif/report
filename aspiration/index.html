@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Мониторинг аспирационных установок</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark hero gate → working dashboard on warm paper; admin stats as a sheet over the page */
+:root{
+  --paper:#F5F0E6; --panel:#FFFDF8; --ink:#1B1F24; --ink-2:#5B6168; --line:#E2DACB;
+  --blue:#1450D4; --ochre:#C0902C; --hero:#14181E;
+  --c1:#1450D4; --c2:#C0902C; --c3:#1F8A70; --c4:#B5452F; --c5:#6B4FB3; --c6:#4A5A6A; --c7:#7A8B2E; --c8:#A63D7A;
+  --ok:#1F7A4D; --warn:#A86B00; --bad:#B3261E;
+  --font-anthropic-sans:'IBM Plex Sans','Segoe UI',Roboto,Arial,sans-serif;
+  --font-anthropic-serif:'Space Grotesk','IBM Plex Sans','Segoe UI',Arial,sans-serif;
+  --color-bg:var(--paper); --color-panel:var(--panel); --color-fg:var(--ink); --color-fg-muted:var(--ink-2); --color-border-line:var(--line);
+  --color-ok:var(--ok); --color-warn:var(--warn); --color-bad:var(--bad);
+  --cds-font-size-caption:12px; --cds-font-size-body:14px; --cds-font-size-heading:16px; --cds-font-size-title:28px; --cds-font-weight-medium:600;
+  --cds-gap-xs:4px; --cds-gap-sm:8px; --cds-gap-md:12px; --cds-gap-lg:20px; --cds-gap-xl:32px;
+  --cds-pad-xs:4px; --cds-pad-sm:8px; --cds-pad-md:12px; --cds-pad-lg:18px; --cds-pad-xl:28px; --cds-radius:10px;
+  --cds-chart-grid:#E9E2D4; --cds-chart-axis:#B9AF9E; --cds-chart-reference:#8F8677; --cds-chart-muted:#A8A090; --cds-chart-status-critical:#B3261E;
+  --cds-surface-popover:#FFFFFF; --cds-border:#D8CFBE; --cds-shadow-popover:0 6px 24px rgba(20,24,30,.14); --cds-text-secondary:#5B6168;
+  --cds-dur-slow:.3s; --cds-ease-out:cubic-bezier(.2,.7,.2,1);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#111418; --panel:#191D23; --ink:#E9E6DF; --ink-2:#A3A8AF; --line:#2B3038;
+  --c1:#6F98FF; --c2:#E0B456; --c3:#4CC3A0; --c4:#E07A62; --c5:#A08BEA; --c6:#93A3B4; --c7:#B5C65A; --c8:#E07AB5;
+  --ok:#5CC98E; --warn:#E6B04A; --bad:#F2766B;
+  --cds-chart-grid:#252A31; --cds-chart-axis:#3D434C; --cds-chart-reference:#7D838B; --cds-chart-muted:#5E646C; --cds-chart-status-critical:#F2766B;
+  --cds-surface-popover:#20252C; --cds-border:#353B44; --cds-shadow-popover:0 6px 24px rgba(0,0,0,.5); --cds-text-secondary:#A3A8AF;
+  color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --paper:#111418; --panel:#191D23; --ink:#E9E6DF; --ink-2:#A3A8AF; --line:#2B3038;
+  --c1:#6F98FF; --c2:#E0B456; --c3:#4CC3A0; --c4:#E07A62; --c5:#A08BEA; --c6:#93A3B4; --c7:#B5C65A; --c8:#E07AB5;
+  --ok:#5CC98E; --warn:#E6B04A; --bad:#F2766B;
+  --cds-chart-grid:#252A31; --cds-chart-axis:#3D434C; --cds-chart-reference:#7D838B; --cds-chart-muted:#5E646C; --cds-chart-status-critical:#F2766B;
+  --cds-surface-popover:#20252C; --cds-border:#353B44; --cds-shadow-popover:0 6px 24px rgba(0,0,0,.5); --cds-text-secondary:#A3A8AF;
+  color-scheme:dark; }
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--color-bg);color:var(--color-fg);font:14px/1.45 var(--font-anthropic-sans);-webkit-font-smoothing:antialiased}
+[hidden]{display:none!important}
+button,input{font:inherit}
+.dash-skeleton{color:transparent!important;background:linear-gradient(90deg,var(--cds-chart-grid),transparent,var(--cds-chart-grid));background-size:200% 100%;border-radius:6px;animation:sk 1.4s linear infinite}
+@keyframes sk{to{background-position:-200% 0}}
+@media (prefers-reduced-motion: reduce){.dash-skeleton{animation:none}}
+
+/* gate */
+.gate{min-height:100vh;min-height:100dvh;background:#14181E;color:#EDEAE3;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+.gate-card{width:min(440px,100%);display:flex;flex-direction:column;gap:18px}
+.gate-eyebrow{font:500 12px/1 var(--font-anthropic-sans);letter-spacing:.14em;text-transform:uppercase;color:#C0902C}
+.gate h1{font:500 34px/1.1 var(--font-anthropic-serif);margin:0;text-wrap:balance}
+.gate p{margin:0;color:#A9AEB5;font-size:14px}
+.gate-form{display:flex;gap:8px}
+.gate-form input{flex:1;min-width:0;background:#1E242C;border:1px solid #333A44;color:#EDEAE3;border-radius:10px;padding:12px 14px;font-size:16px;letter-spacing:.2em}
+.gate-form input:focus-visible{outline:2px solid #1450D4;outline-offset:1px}
+.btn-primary{background:#1450D4;color:#fff;border:0;border-radius:10px;padding:12px 18px;font-weight:600;cursor:pointer}
+.btn-primary:hover{background:#0F43B5}
+.btn-primary:disabled{opacity:.6;cursor:progress}
+.gate-err{color:#F2766B;min-height:20px;font-size:13px}
+.gate-note{font-size:12px!important;color:#7D838B!important;border-top:1px solid #2B3038;padding-top:14px}
+.linkbtn{background:none;border:0;padding:0;color:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-size:12px}
+
+/* app */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 16px;background:#14181E;color:#EDEAE3}
+.topbar .brand{font:500 15px/1.2 var(--font-anthropic-serif);display:flex;gap:10px;align-items:center}
+.topbar .brand b{color:#C0902C;font-weight:600}
+.topbar .tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12px}
+.badge-src{border:1px solid #333A44;border-radius:999px;padding:3px 10px;color:#A9AEB5}
+.badge-src.live{color:#5CC98E;border-color:#2E5A44}
+.badge-src.snap{color:#E6B04A;border-color:#5C4A22}
+.btn-ghost{background:transparent;border:1px solid #333A44;color:#EDEAE3;border-radius:8px;padding:5px 10px;cursor:pointer;font-size:12px}
+.btn-ghost:hover{border-color:#5B6168}
+#dash-root{padding:20px clamp(16px,3vw,40px) 40px;max-width:1500px;margin:0 auto}
+.loading{padding:60px 16px;text-align:center;color:var(--color-fg-muted)}
+
+/* admin */
+.admin{background:var(--color-bg);min-height:100vh}
+.admin-wrap{max-width:1200px;margin:0 auto;padding:20px clamp(16px,3vw,40px) 48px;display:flex;flex-direction:column;gap:18px}
+.admin h2{font:500 26px/1.15 var(--font-anthropic-serif);margin:0}
+.admin .sub{color:var(--color-fg-muted);margin:0}
+.a-login{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.a-login input{background:var(--color-panel);border:1px solid var(--color-border-line);color:var(--color-fg);border-radius:10px;padding:10px 12px;min-width:0;width:min(260px,100%)}
+.a-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,10.5rem),1fr));gap:12px}
+.a-kpi{background:var(--color-panel);border:1px solid var(--color-border-line);border-radius:var(--cds-radius);padding:12px 16px}
+.a-kpi span{display:block;font-size:12px;color:var(--color-fg-muted)}
+.a-kpi b{display:block;font:500 28px/1.15 var(--font-anthropic-serif);margin-top:2px;font-variant-numeric:tabular-nums}
+.a-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,26rem),1fr));gap:12px}
+.a-card{background:var(--color-panel);border:1px solid var(--color-border-line);border-radius:var(--cds-radius);padding:16px;min-width:0}
+.a-card h3{margin:0 0 4px;font-size:16px;font-weight:600}
+.a-card .note{margin:0 0 10px;font-size:12px;color:var(--color-fg-muted)}
+.a-tw{overflow:auto;max-height:440px}
+.a-tb{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.a-tb th{position:sticky;top:0;background:var(--color-panel);text-align:left;color:var(--color-fg-muted);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--color-border-line);white-space:nowrap}
+.a-tb td{padding:6px 8px;border-bottom:1px solid var(--color-border-line);white-space:nowrap}
+.a-tb td.num,.a-tb th.num{text-align:right}
+.a-bar{display:inline-block;height:8px;border-radius:4px;background:var(--c1);vertical-align:middle;margin-right:6px}
+.a-seg{display:inline-flex;border:1px solid var(--color-border-line);border-radius:8px;overflow:hidden}
+.a-seg button{background:transparent;border:0;padding:6px 10px;cursor:pointer;color:var(--color-fg-muted);font-size:12px}
+.a-seg button[aria-pressed="true"]{background:var(--color-fg);color:var(--color-bg)}
+.a-days{display:flex;align-items:flex-end;gap:2px;height:120px;padding-top:6px}
+.a-days div{flex:1;min-width:3px;background:var(--c1);border-radius:3px 3px 0 0;position:relative}
+.a-err{color:var(--color-bad);font-size:13px;min-height:18px}
+.ev{font-size:11px;border-radius:999px;padding:1px 7px;border:1px solid currentColor}
+.ev.login{color:var(--color-ok)} .ev.bad_password{color:var(--color-bad)} .ev.open{color:var(--color-fg-muted)} .ev.admin{color:var(--c2)}
+</style>
+</head>
+<body>
+<section class="gate" id="gate">
+  <div class="gate-card">
+    <span class="gate-eyebrow">Аспирация · журнал аварий</span>
+    <h1>Мониторинг аспирационных установок</h1>
+    <p>Журнал аварий, трудозатраты и справочник кодов HMI. Доступ по паролю.</p>
+    <div class="gate-form">
+      <input id="pw" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Пароль" aria-label="Пароль">
+      <button class="btn-primary" id="go" type="button">Войти</button>
+    </div>
+    <div class="gate-err" id="gate-err" role="alert"></div>
+    <p class="gate-note">При открытии сайта и входе фиксируются IP-адрес, страна, город и время визита — для статистики посещений. <button class="linkbtn" id="to-admin-gate" type="button">Администратор</button></p>
+    <p class="gate-note" style="border-top:0;padding-top:0">Вся информация, используемая на данном сайте, является вымышленной и не относится ни к какому объекту.</p>
+  </div>
+</section>
+
+<section id="app" hidden>
+  <header class="topbar">
+    <div class="brand"><b>Аспирация</b> мониторинг установок</div>
+    <div class="tools">
+      <span class="badge-src" id="src-badge">Загрузка данных…</span>
+      <button class="btn-ghost" id="to-admin" type="button">Статистика посещений</button>
+      <button class="btn-ghost" id="logout" type="button">Выйти</button>
+    </div>
+  </header>
+  <main id="dash-root"><div class="loading">Расшифровка и загрузка данных…</div></main>
+</section>
+
+<section class="admin" id="admin" hidden>
+  <header class="topbar">
+    <div class="brand"><b>Аспирация</b> статистика посещений</div>
+    <div class="tools"><button class="btn-ghost" id="admin-back" type="button">← Назад</button></div>
+  </header>
+  <div class="admin-wrap">
+    <div>
+      <h2>Кто открывал сайт</h2>
+      <p class="sub">Визиты по странам и IP-адресам. Данные хранятся в Google-таблице счётчика, пароль администратора проверяется на её стороне.</p>
+    </div>
+    <div class="a-login" id="a-login">
+      <input id="apw" type="password" inputmode="numeric" placeholder="Пароль администратора" aria-label="Пароль администратора">
+      <button class="btn-primary" id="ago" type="button">Показать</button>
+      <span class="a-err" id="a-err" role="alert"></span>
+    </div>
+    <div id="a-body" hidden></div>
+  </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
